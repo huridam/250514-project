@@ -18,6 +18,22 @@ const conversationHistory = [
   { role: "system", content: systemPrompt }
 ];
 
+// 🆕 챗봇의 초기 인사말 설정
+const initialGreeting = `안녕하세요! 저는 오늘 하루를 함께 나눌 응원봇이에요! 😊
+
+오늘 하루는 어떠셨나요? 무슨 일이든 편하게 들려주세요.
+기쁜 일은 함께 기뻐하고, 힘든 일은 함께 나누며, 평범한 일상도 특별하게 만들어드릴게요!
+
+여러분의 이야기를 듣고 진심으로 응원하는 것이 제 기쁨입니다. 어떤 이야기든 환영해요! 💪`;
+
+// 🆕 페이지가 로드되었을 때 초기 인사말 표시
+window.addEventListener('DOMContentLoaded', () => {
+  chatbox.innerHTML += `<div class="text-left mb-2 text-gray-800">응원봇: ${initialGreeting}</div>`;
+  
+  // 대화 이력에도 추가
+  conversationHistory.push({ role: "assistant", content: initialGreeting });
+});
+
 async function fetchGPTResponse() {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -50,15 +66,33 @@ async function handleSend() {
   // 입력 필드 초기화
   userInput.value = '';
 
-  // GPT 응답 받아오기
-  const reply = await fetchGPTResponse();
-
-  // GPT 응답 UI에 출력
-  chatbox.innerHTML += `<div class="text-left mb-2 text-gray-800">GPT: ${reply}</div>`;
+  // 로딩 메시지 표시 (선택사항)
+  const loadingMessage = `<div id="loading" class="text-left mb-2 text-gray-400">응원봇이 생각중이에요...</div>`;
+  chatbox.innerHTML += loadingMessage;
   chatbox.scrollTop = chatbox.scrollHeight;
 
-  // GPT 응답도 대화 이력에 추가
-  conversationHistory.push({ role: "assistant", content: reply });
+  try {
+    // GPT 응답 받아오기
+    const reply = await fetchGPTResponse();
+    
+    // 로딩 메시지 제거
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) loadingElement.remove();
+
+    // GPT 응답 UI에 출력
+    chatbox.innerHTML += `<div class="text-left mb-2 text-gray-800">응원봇: ${reply}</div>`;
+    chatbox.scrollTop = chatbox.scrollHeight;
+
+    // GPT 응답도 대화 이력에 추가
+    conversationHistory.push({ role: "assistant", content: reply });
+  } catch (error) {
+    // 에러 처리
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) loadingElement.remove();
+    
+    chatbox.innerHTML += `<div class="text-left mb-2 text-red-600">응원봇: 앗, 뭔가 문제가 생겼어요. 다시 한 번 이야기해주실래요?</div>`;
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }
 }
 
 // 버튼 클릭 시 작동
